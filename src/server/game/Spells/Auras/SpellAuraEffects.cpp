@@ -1917,10 +1917,13 @@ void AuraEffect::HandleAuraModShapeshift(AuraApplication const* aurApp, uint8 mo
         {
             if (!shapeInfo->PresetSpellID[i])
                 continue;
-            if (apply)
+            if (apply){
+                TC_LOG_DEBUG("spells.aura.effect", "AuraEffect::HandleAuraModShapeshift: Adding preset spell %u for shapeshift form %u to player %s", shapeInfo->PresetSpellID[i], form, target->GetName().c_str());
                 target->ToPlayer()->AddTemporarySpell(shapeInfo->PresetSpellID[i]);
-            else
+            } else{
+                TC_LOG_DEBUG("spells.aura.effect", "AuraEffect::HandleAuraModShapeshift: Removing preset spell %u for shapeshift form %u from player %s", shapeInfo->PresetSpellID[i], form, target->GetName().c_str());
                 target->ToPlayer()->RemoveTemporarySpell(shapeInfo->PresetSpellID[i]);
+            }
         }
     }
 }
@@ -4812,15 +4815,24 @@ void AuraEffect::HandleAuraModFaction(AuraApplication const* aurApp, uint8 mode,
 
     if (apply)
     {
+        // wog.remove - debug logging for faction PvP
+        TC_LOG_ERROR("wog.remove", "MOD_FACTION: Unit {} changing faction from {} to {}", 
+            target->GetGUID().ToString(), 
+            target->GetFaction(), 
+            GetMiscValue());
+        // wog.remove end
+        
         target->SetFaction(GetMiscValue());
-        if (target->GetTypeId() == TYPEID_PLAYER)
-            target->RemoveUnitFlag(UNIT_FLAG_PLAYER_CONTROLLED);
+        // wog stuff
+        // if (target->GetTypeId() == TYPEID_PLAYER)
+        //     target->RemoveUnitFlag(UNIT_FLAG_PLAYER_CONTROLLED);
     }
     else
     {
         target->RestoreFaction();
-        if (target->GetTypeId() == TYPEID_PLAYER)
-            target->SetUnitFlag(UNIT_FLAG_PLAYER_CONTROLLED);
+        // wog stuff
+        // if (target->GetTypeId() == TYPEID_PLAYER)
+        //     target->SetUnitFlag(UNIT_FLAG_PLAYER_CONTROLLED);
     }
 }
 

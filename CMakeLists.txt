@@ -48,6 +48,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable (sol2)
 target_compile_definitions(sol2 INTERFACE SOL_NO_CHECK_NUMBER_PRECISION)
+target_compile_definitions(sol2 INTERFACE SOL_USE_OPTIONAL=0)
 
 #
 # sourcemap

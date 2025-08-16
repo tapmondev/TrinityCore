@@ -38,6 +38,7 @@
 #include "Player.h"
 #include "ReputationMgr.h"
 #include "SpellAuraEffects.h"
+#include "SpellAuraDefines.h"
 #include "SpellMgr.h"
 #include "StringConvert.h"
 #include "TemporarySummon.h"
@@ -2748,6 +2749,29 @@ ReputationRank WorldObject::GetReactionTo(WorldObject const* target) const
 
     Unit const* unit = Coalesce<const Unit>(ToUnit(), selfPlayerOwner);
     Unit const* targetUnit = Coalesce<const Unit>(target->ToUnit(), targetPlayerOwner);
+
+    // @tswow-begin
+    if (this->IsUnit() && target->IsUnit())
+    {
+        bool early_return = false;
+        uint32 return_value = false;
+        FIRE(
+            Unit,OnGetReactionToHook,
+             TSUnit(const_cast<Unit*>(unit)),
+         TSUnit(const_cast<Unit*>(targetUnit)),
+         TSMutable<bool,bool>(&early_return),
+         TSMutableNumber<uint32>(&return_value)
+        );
+            // Cast to ReputationRank
+            if (early_return)
+            {
+                TC_LOG_DEBUG("wog.remove", "WorldObject::GetReactionTo early return for {} and {} with value {}", unit->GetGUID().ToString(), targetUnit->GetGUID().ToString(), return_value);
+                return static_cast<ReputationRank>(return_value);
+            }
+        }
+    
+    // @tswow-end
+
     if (unit && unit->HasUnitFlag(UNIT_FLAG_PLAYER_CONTROLLED))
     {
         if (targetUnit && targetUnit->HasUnitFlag(UNIT_FLAG_PLAYER_CONTROLLED))

@@ -1463,7 +1463,7 @@ SpellCastResult SpellInfo::CheckShapeshift(uint32 form) const
         return SPELL_CAST_OK;
 
     uint64 stanceMask = (form ? UI64LIT(1) << (form - 1) : 0);
-
+    TC_LOG_DEBUG("spells", "CheckShapeshift: spell {} form {} mask {}", Id, form, stanceMask);
     if (stanceMask & StancesNot)                 // can explicitly not be cast in this stance
         return SPELL_FAILED_NOT_SHAPESHIFT;
 
@@ -1480,6 +1480,7 @@ SpellCastResult SpellInfo::CheckShapeshift(uint32 form) const
             TC_LOG_ERROR("spells", "GetErrorAtShapeshiftedCast: unknown shapeshift {}", form);
             return SPELL_CAST_OK;
         }
+        TC_LOG_DEBUG("spells", "CheckShapeshift: spell {} form {} mask {}, shapeInfoFlags {}", Id, form, stanceMask, shapeInfo->Flags);
         actAsShifted = !(shapeInfo->Flags & 1);            // shapeshift acts as normal form for spells
     }
 

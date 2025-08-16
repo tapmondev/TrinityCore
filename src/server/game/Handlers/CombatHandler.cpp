@@ -39,6 +39,14 @@ void WorldSession::HandleAttackSwingOpcode(WorldPackets::Combat::AttackSwing& pa
 
     if (!_player->IsValidAttackTarget(enemy))
     {
+        // wog.remove - debug logging for faction PvP
+        TC_LOG_ERROR("wog.remove", "Attack blocked: Player {} (faction {}) cannot attack {} (faction {})", 
+            _player->GetName(),
+            _player->GetFaction(),
+            enemy->GetName(),
+            enemy->GetFaction());
+        // wog.remove end
+        
         // stop attack state at client
         SendAttackStop(enemy);
         return;

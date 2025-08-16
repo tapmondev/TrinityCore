@@ -167,7 +167,9 @@ if(UNIX)
   foreach(LIB ${MYSQL_ADD_LIBRARIES})
     find_library(MYSQL_LIBRARY
       NAMES
-        mysql libmysql ${LIB}
+        mysql libmysql mysqlclient ${LIB}
+      HINTS
+        ${_MYSQL_ROOT_HINTS}
       PATHS
         ${MYSQL_ADD_LIBRARIES_PATH}
         /usr/lib
@@ -175,6 +177,9 @@ if(UNIX)
         /usr/local/lib
         /usr/local/lib/mysql
         /usr/local/mysql/lib
+      PATH_SUFFIXES
+        lib
+        lib/mysql
       DOC "Specify the location of the mysql library here."
     )
   endforeach(LIB ${MYSQL_ADD_LIBRARY})
