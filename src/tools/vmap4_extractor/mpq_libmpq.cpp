@@ -83,7 +83,11 @@ MPQFile::MPQFile(char const* filename):
     {
         if((*i)->is_directory)
         {
-            auto fullpath = (*i)->filename / boost::filesystem::path(filename);
+            // Convert Windows path separators to Unix for directory archives
+            std::string unix_filename = filename;
+            std::replace(unix_filename.begin(), unix_filename.end(), '\\', '/');
+            
+            auto fullpath = (*i)->filename / boost::filesystem::path(unix_filename);
             if(boost::filesystem::exists(fullpath))
             {
                 std::ifstream fin;

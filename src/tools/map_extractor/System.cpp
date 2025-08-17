@@ -214,7 +214,9 @@ uint32 ReadBuild(int locale)
 
 uint32 ReadMapDBC()
 {
-    printf("Read Map.dbc file... ");
+    printf("Read Map.dbc file... \n");
+    printf("[DEBUG] Looking for DBFilesClient\\Map.dbc in all archives...\n");
+    
     DBCFile dbc("DBFilesClient\\Map.dbc");
 
     if(!dbc.open())
@@ -224,6 +226,8 @@ uint32 ReadMapDBC()
     }
 
     size_t map_count = dbc.getRecordCount();
+    printf("[DEBUG] Map.dbc loaded successfully with %zu records\n", map_count);
+    
     map_ids.resize(map_count);
     for(uint32 x = 0; x < map_count; ++x)
     {
@@ -239,6 +243,8 @@ uint32 ReadMapDBC()
 
         strncpy(map_ids[x].name, map_name, max_map_name_length);
         map_ids[x].name[max_map_name_length - 1] = '\0';
+        
+        printf("[DEBUG] Map %u: ID=%u, Name=%s\n", x, map_ids[x].id, map_ids[x].name);
     }
     printf("Done! (" SZFMTD "maps loaded)\n", map_count);
     return map_count;

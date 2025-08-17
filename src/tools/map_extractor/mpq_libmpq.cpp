@@ -28,9 +28,16 @@ ArchiveSet gOpenArchives;
 MPQArchive::MPQArchive(char const* filename)
 {
     this->filename =  std::string(filename);
-    printf("Opening %s\n", filename);
+    printf("Opening archive #%zu: %s\n", gOpenArchives.size(), filename);
+    
+    // Check if this archive contains Map.dbc
     if(boost::filesystem::is_directory(filename))
     {
+        auto mapDbcPath = boost::filesystem::path(filename) / "DBFilesClient" / "Map.dbc";
+        if(boost::filesystem::exists(mapDbcPath)) {
+            printf("[DEBUG] Archive contains Map.dbc: %s\n", mapDbcPath.string().c_str());
+        }
+        
         is_directory = true;
         mpq_a = nullptr;
         gOpenArchives.push_front(this);
@@ -79,13 +86,37 @@ MPQFile::MPQFile(char const* filename):
     pointer(0),
     size(0)
 {
+    // Debug logging for Map.dbc
+    if(strstr(filename, "Map.dbc") != NULL) {
+        printf("[DEBUG] MPQFile: Searching for %s in %zu archives\n", filename, gOpenArchives.size());
+    }
+    
+    int archive_index = 0;
     for(ArchiveSet::iterator i=gOpenArchives.begin(); i!=gOpenArchives.end();++i)
     {
         if((*i)->is_directory)
         {
-            auto fullpath = (*i)->filename / boost::filesystem::path(filename);
+            // Convert Windows path separators to Unix for directory archives
+            std::string unix_filename = filename;
+            std::replace(unix_filename.begin(), unix_filename.end(), '\\', '/');
+            
+            auto fullpath = (*i)->filename / boost::filesystem::path(unix_filename);
+            if(strstr(filename, "Map.dbc") != NULL) {
+                printf("[DEBUG] MPQFile: Checking directory archive #%d: %s\n", archive_index, (*i)->filename.c_str());
+                printf("[DEBUG] MPQFile:   Original filename: %s\n", filename);
+                printf("[DEBUG] MPQFile:   Unix filename: %s\n", unix_filename.c_str());
+                printf("[DEBUG] MPQFile:   Full path: %s\n", fullpath.string().c_str());
+                printf("[DEBUG] MPQFile:   Exists: %s\n", boost::filesystem::exists(fullpath) ? "YES" : "NO");
+            }
+            
             if(boost::filesystem::exists(fullpath))
             {
+                if(strstr(filename, "Map.dbc") != NULL) {
+                    printf("[DEBUG] MPQFile: FOUND %s in directory archive #%d: %s\n", 
+                           filename, archive_index, fullpath.string().c_str());
+                    printf("[DEBUG] MPQFile: Using this Map.dbc from: %s\n", fullpath.string().c_str());
+                }
+                
                 std::ifstream fin;
                 fin.open(fullpath.string(),std::ios::binary);
                 fin.seekg(0, std::ios::end);
@@ -101,18 +132,37 @@ MPQFile::MPQFile(char const* filename):
                 {
                     eof = true;
                     buffer = 0;
+                    archive_index++;
                     continue;
                 }
                 fin.close();
                 return;
             }
+            else if(strstr(filename, "Map.dbc") != NULL) {
+                printf("[DEBUG] MPQFile: %s NOT found in directory archive #%d: %s\n", 
+                       filename, archive_index, (*i)->filename.c_str());
+            }
+            archive_index++;
             continue;
         }
 
         mpq_archive *mpq_a = (*i)->mpq_a;
 
         uint32_t filenum;
-        if(libmpq__file_number(mpq_a, filename, &filenum)) continue;
+        if(libmpq__file_number(mpq_a, filename, &filenum)) {
+            if(strstr(filename, "Map.dbc") != NULL) {
+                printf("[DEBUG] MPQFile: %s NOT found in MPQ archive #%d: %s\n", 
+                       filename, archive_index, (*i)->filename.c_str());
+            }
+            archive_index++;
+            continue;
+        }
+        
+        if(strstr(filename, "Map.dbc") != NULL) {
+            printf("[DEBUG] MPQFile: FOUND %s in MPQ archive #%d: %s\n", 
+                   filename, archive_index, (*i)->filename.c_str());
+        }
+        
         libmpq__off_t transferred;
         libmpq__file_size_unpacked(mpq_a, filenum, &size);
 
@@ -124,6 +174,11 @@ MPQFile::MPQFile(char const* filename):
             return;
         }
 
+        if(strstr(filename, "Map.dbc") != NULL) {
+            printf("[DEBUG] MPQFile: Using this Map.dbc from MPQ: %s (size: %zu bytes)\n", 
+                   (*i)->filename.c_str(), size);
+        }
+
         buffer = new char[size];
 
         //libmpq_file_getdata
@@ -132,6 +187,11 @@ MPQFile::MPQFile(char const* filename):
         return;
 
     }
+    
+    if(strstr(filename, "Map.dbc") != NULL) {
+        printf("[DEBUG] MPQFile: %s NOT FOUND in any archive!\n", filename);
+    }
+    
     eof = true;
     buffer = 0;
 }
@@ -290,5 +350,23 @@ void ReadMPQFiles(std::string dataPath, bool use_directories)
   {
       new MPQArchive(file.c_str());
   }
+  
+  // Debug: Show final archive order
+  printf("\n[DEBUG] Final archive search order (will search in this order):\n");
+  int idx = 0;
+  for(ArchiveSet::iterator i = gOpenArchives.begin(); i != gOpenArchives.end(); ++i)
+  {
+      printf("[DEBUG] Archive #%d: %s", idx++, (*i)->filename.c_str());
+      
+      // Check if this archive contains Map.dbc
+      if((*i)->is_directory) {
+          auto mapDbcPath = (*i)->filename / boost::filesystem::path("DBFilesClient") / boost::filesystem::path("Map.dbc");
+          if(boost::filesystem::exists(mapDbcPath)) {
+              printf(" [CONTAINS Map.dbc]");
+          }
+      }
+      printf("\n");
+  }
+  printf("\n");
 }
 // @tswow-end
