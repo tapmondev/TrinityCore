@@ -37,6 +37,10 @@
 #include "Player.h"
 #include "World.h"
 #include "WorldPacket.h"
+// @tswow-begin
+#include "TSPlayer.h"
+#include "TSGroup.h"
+// @tswow-end
 
 void WorldSession::HandleBattlemasterHelloOpcode(WorldPacket& recvData)
 {
@@ -194,8 +198,18 @@ void WorldSession::HandleBattlemasterJoinOpcode(WorldPacket& recvData)
             return;
 
         BattlegroundQueue& bgQueue = sBattlegroundMgr->GetBattlegroundQueue(bgQueueTypeId);
+        uint32 teamId = _player->GetTeam();
+        uint32 queueSize = static_cast<uint32>(bgQueue.m_QueuedPlayers.size());
+        FIRE(
+            Player, 
+            OnSetTeamForBattleground,
+            TSPlayer(static_cast<Player*>(_player)),
+            TSNumber<uint32>(bgTypeId_),
+            TSNumber<uint32>(queueSize),
+            TSMutableNumber<uint32>(& teamId)
+        )
 
-        GroupQueueInfo* ginfo = bgQueue.AddGroup(_player, nullptr, bgTypeId, bracketEntry, 0, false, isPremade, 0, 0);
+        GroupQueueInfo* ginfo = bgQueue.AddGroup(_player, nullptr, bgTypeId, bracketEntry, 0, false, isPremade, 0, 0, teamId);
         uint32 avgTime = bgQueue.GetAverageQueueWaitTime(ginfo, bracketEntry->GetBracketId());
         // already checked if queueSlot is valid, now just get it
         uint32 queueSlot = _player->AddBattlegroundQueueId(bgQueueTypeId);
@@ -225,7 +239,18 @@ void WorldSession::HandleBattlemasterJoinOpcode(WorldPacket& recvData)
         if (err > 0)
         {
             TC_LOG_DEBUG("bg.battleground", "Battleground: the following players are joining as group:");
-            ginfo = bgQueue.AddGroup(_player, grp, bgTypeId, bracketEntry, 0, false, isPremade, 0, 0);
+            uint32 teamId = _player->GetTeam();
+            uint32 queueSize = static_cast<uint32>(bgQueue.m_QueuedPlayers.size());
+
+            FIRE(
+                Group, 
+                OnSetTeamForBattleground,
+                TSGroup(static_cast<Group*>(grp)),
+                TSNumber<uint32>(bgTypeId_),
+                TSNumber<uint32>(queueSize),
+                TSMutableNumber<uint32>(&teamId)
+            )
+            ginfo = bgQueue.AddGroup(_player, grp, bgTypeId, bracketEntry, 0, false, isPremade, 0, 0, teamId);
             avgTime = bgQueue.GetAverageQueueWaitTime(ginfo, bracketEntry->GetBracketId());
         }
 
